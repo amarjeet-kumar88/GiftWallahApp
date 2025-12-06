@@ -1,16 +1,9 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import {
-  createCODOrderController,
-  createOnlineOrderInitController,
-  getMyOrdersController
+  getMyOrdersController,
+  getMyOrderByIdController,
 } from "../controllers/order.controller";
-import { validateRequest } from "../middlewares/validateRequest.middleware";
-import {
-  createCodOrderSchema,
-  createOnlineOrderInitSchema
-} from "../validation/order.schema";
-
 
 /**
  * @swagger
@@ -86,12 +79,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.post("/cod", validateRequest(createCodOrderSchema), createCODOrderController);
-router.post(
-  "/online/init",
-  validateRequest(createOnlineOrderInitSchema),
-  createOnlineOrderInitController
-);
-router.get("/me", getMyOrdersController);
+router.get("/", getMyOrdersController);
+router.get("/:orderId", getMyOrderByIdController);
 
 export default router;

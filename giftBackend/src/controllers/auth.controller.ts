@@ -4,6 +4,7 @@ import { sendLoginOTP, verifyLoginOTP } from "../services/auth.service";
 import { successResponse } from "../utils/apiResponse";
 import { ApiError } from "../utils/apiError";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { changePassword } from "../services/auth.service";
 
 export const sendOtpController = async (
   req: Request,
@@ -69,6 +70,27 @@ export const meController = async (
         user
       })
     );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePasswordController = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) throw new ApiError(401, "Unauthorized");
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      throw new ApiError(400, "Both current and new password are required");
+    }
+
+    await changePassword(req.user.userId, currentPassword, newPassword);
+
+    res.status(200).json(successResponse("Password updated successfully", {}));
   } catch (error) {
     next(error);
   }

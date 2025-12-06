@@ -30,6 +30,10 @@ export const getOrCreateCart = async (userId: string) => {
 
 export const getCartForUser = async (userId: string) => {
   const cart = await getOrCreateCart(userId);
+
+  // ✅ Agar product info bhi chahiye ho to populate
+  await cart.populate("items.product");
+
   return cart;
 };
 
@@ -52,13 +56,17 @@ export const addOrUpdateCartItem = async (
   }
 
   const cart = await getOrCreateCart(userId);
+
   const price = product.salePrice ?? product.price;
   const name = product.name;
-  const image = product.images[0]?.url;
+  const image = product.images?.[0]?.url;
 
-  const existingIdx = cart.items.findIndex((i) => i.product.toString() === productId);
+  const existingIdx = cart.items.findIndex(
+    (i) => i.product.toString() === productId
+  );
 
   if (existingIdx > -1) {
+    // ✅ update quantity (addOrUpdate)
     cart.items[existingIdx].quantity = quantity;
     cart.items[existingIdx].price = price;
     cart.items[existingIdx].name = name;
@@ -75,6 +83,9 @@ export const addOrUpdateCartItem = async (
 
   recalcCart(cart);
   await cart.save();
+
+  await cart.populate("items.product");
+
   return cart;
 };
 
@@ -82,11 +93,13 @@ export const removeCartItem = async (userId: string, productId: string) => {
   const cart = await getOrCreateCart(userId);
 
   cart.items = cart.items.filter(
-    (i) => i.product.toString() !== productId
+    (i: any) => i.product.toString() !== productId
   );
 
   recalcCart(cart);
   await cart.save();
+  await cart.populate("items.product");
+
   return cart;
 };
 

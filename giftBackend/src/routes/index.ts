@@ -6,12 +6,12 @@ import productRoutes from "./product.routes";
 import uploadRoutes from "./upload.routes";
 import addressRoutes from "./address.routes";
 import cartRoutes from "./cart.routes";
-import orderRoutes from "./order.routes";
 import paymentRoutes from "./payment.routes";
 import adminRoutes from "./admin.routes";
 import reviewRoutes from "./review.routes";
 import wishlistRoutes from "./wishlist.routes";
-
+import checkoutRoutes from "./checkout.routes";
+import orderRoutes from "./order.routes";
 /**
  * @swagger
  * /api:
@@ -34,11 +34,12 @@ router.use("/products", productRoutes);
 router.use("/upload", uploadRoutes);
 router.use("/addresses", addressRoutes);
 router.use("/cart", cartRoutes);
-router.use("/orders", orderRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/admin", adminRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/wishlist", wishlistRoutes);
+router.use("/checkout", checkoutRoutes);
+router.use("/orders", orderRoutes);
 
 
 router.get("/", (_req, res) => {

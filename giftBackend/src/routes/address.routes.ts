@@ -1,17 +1,12 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import {
-  createAddressController,
-  deleteAddressController,
-  getAddressesController,
-  updateAddressController
+  createMyAddressController,
+  deleteMyAddressController,
+  getMyAddressesController,
+  setMyDefaultAddressController,
+  updateMyAddressController,
 } from "../controllers/address.controller";
-import { validateRequest } from "../middlewares/validateRequest.middleware";
-import {
-  createAddressSchema,
-  updateAddressSchema,
-  addressIdParamSchema
-} from "../validation/address.schema";
 
 
 /**
@@ -154,13 +149,10 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get("/", getAddressesController);
-router.post("/", validateRequest(createAddressSchema), createAddressController);
-router.put("/:id", validateRequest(updateAddressSchema), updateAddressController);
-router.delete(
-  "/:id",
-  validateRequest(addressIdParamSchema),
-  deleteAddressController
-);
+router.get("/", getMyAddressesController);
+router.post("/", createMyAddressController);
+router.put("/:addressId", updateMyAddressController);
+router.delete("/:addressId", deleteMyAddressController);
+router.patch("/:addressId/default", setMyDefaultAddressController);
 
 export default router;

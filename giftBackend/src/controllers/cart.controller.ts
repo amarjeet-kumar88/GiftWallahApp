@@ -18,7 +18,9 @@ export const getCartController = async (
     if (!req.user) throw new ApiError(401, "Unauthorized");
 
     const cart = await getCartForUser(req.user.userId);
-    res.status(200).json(successResponse("Cart fetched", { cart }));
+    return res
+      .status(200)
+      .json(successResponse("Cart fetched", { cart }));
   } catch (error) {
     next(error);
   }
@@ -33,13 +35,15 @@ export const addOrUpdateCartItemController = async (
     if (!req.user) throw new ApiError(401, "Unauthorized");
 
     const { productId, quantity } = req.body;
+    if (!productId) throw new ApiError(400, "productId is required");
+
     const cart = await addOrUpdateCartItem(
       req.user.userId,
       productId,
-      Number(quantity)
+      Number(quantity || 1)
     );
 
-    res
+    return res
       .status(200)
       .json(successResponse("Cart updated", { cart }));
   } catch (error) {
@@ -55,8 +59,12 @@ export const removeCartItemController = async (
   try {
     if (!req.user) throw new ApiError(401, "Unauthorized");
 
-    const cart = await removeCartItem(req.user.userId, req.params.productId);
-    res
+    const { productId } = req.params;
+    if (!productId) throw new ApiError(400, "productId is required");
+
+    const cart = await removeCartItem(req.user.userId, productId);
+
+    return res
       .status(200)
       .json(successResponse("Item removed from cart", { cart }));
   } catch (error) {
@@ -73,7 +81,7 @@ export const clearCartController = async (
     if (!req.user) throw new ApiError(401, "Unauthorized");
 
     const cart = await clearCart(req.user.userId);
-    res
+    return res
       .status(200)
       .json(successResponse("Cart cleared", { cart }));
   } catch (error) {

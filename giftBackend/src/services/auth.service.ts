@@ -108,3 +108,21 @@ export const verifyLoginOTP = async (params: {
     user
   };
 }
+
+export const changePassword = async (
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+) => {
+  const user = await User.findById(userId).select("+password");
+  if (!user) throw new ApiError(404, "User not found");
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) throw new ApiError(400, "Current password is incorrect");
+
+  const salt = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(newPassword, salt);
+
+  await user.save();
+  return user;
+};

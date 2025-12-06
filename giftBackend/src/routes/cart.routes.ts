@@ -1,16 +1,11 @@
 import { Router } from "express";
-import { authMiddleware } from "../middlewares/auth.middleware";
 import {
-  addOrUpdateCartItemController,
-  clearCartController,
   getCartController,
-  removeCartItemController
+  addOrUpdateCartItemController,
+  removeCartItemController,
+  clearCartController
 } from "../controllers/cart.controller";
-import { validateRequest } from "../middlewares/validateRequest.middleware";
-import {
-  cartAddOrUpdateSchema,
-  cartRemoveItemSchema
-} from "../validation/cart.schema";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 
 /**
@@ -98,24 +93,15 @@ import {
  */
 
 
+
 const router = Router();
 
 router.use(authMiddleware);
 
 router.get("/", getCartController);
-
-router.post(
-  "/items",
-  validateRequest(cartAddOrUpdateSchema),
-  addOrUpdateCartItemController
-);
-
-router.delete(
-  "/items/:productId",
-  validateRequest(cartRemoveItemSchema),
-  removeCartItemController
-);
-
-router.delete("/clear", clearCartController);
+router.post("/items", addOrUpdateCartItemController);
+// productId = Product ka _id
+router.delete("/items/:productId", removeCartItemController);
+router.delete("/", clearCartController);
 
 export default router;

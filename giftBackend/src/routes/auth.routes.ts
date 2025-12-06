@@ -4,6 +4,7 @@ import {
   verifyOtpController,
   meController
 } from "../controllers/auth.controller";
+import { changePasswordController } from "../controllers/auth.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { validateRequest } from "../middlewares/validateRequest.middleware";
 import { sendOtpSchema, verifyOtpSchema } from "../validation/auth.schema";
@@ -91,5 +92,6 @@ const router = Router();
 router.post("/send-otp", validateRequest(sendOtpSchema), sendOtpController);
 router.post("/verify-otp", validateRequest(verifyOtpSchema), verifyOtpController);
 router.get("/me", authMiddleware, meController);
+router.post("/change-password", authMiddleware, changePasswordController);
 
 export default router;
