@@ -2,10 +2,37 @@
 
 import { useEffect, useState } from "react";
 import apiClient from "@/lib/apiClient";
-import { SavedAddress } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import { MapPin, CreditCard, ShoppingCart } from "lucide-react";
 
-interface AddressForm {
+type CartItem = {
+  product: string | { _id: string; name: string };
+  name: string;
+  image?: string;
+  price: number;
+  quantity: number;
+};
+
+type Cart = {
+  items: CartItem[];
+  totalItems: number;
+  totalPrice: number;
+};
+
+type SavedAddress = {
+  _id: string;
+  fullName: string;
+  phone: string;
+  pincode: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  landmark?: string;
+  isDefault?: boolean;
+};
+
+type AddressForm = {
   fullName: string;
   phone: string;
   pincode: string;
@@ -14,7 +41,7 @@ interface AddressForm {
   city: string;
   state: string;
   landmark: string;
-}
+};
 
 const emptyAddress: AddressForm = {
   fullName: "",
@@ -27,70 +54,30 @@ const emptyAddress: AddressForm = {
   landmark: "",
 };
 
+const formatPrice = (value: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+
 export default function CheckoutPageClient() {
   const router = useRouter();
 
-  const [cart, setCart] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [cart, setCart] = useState<Cart | null>(null);
+  const [cartLoading, setCartLoading] = useState(true);
 
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | "new">(
-    "new"
-  );
   const [address, setAddress] = useState<AddressForm>(emptyAddress);
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("new");
 
-  // 🔹 Fetch cart + saved addresses
-  const fetchCart = async () => {
-    const res = await apiClient.get("/cart");
-    const root = res.data;
-    const payload = root?.data ?? root;
-    setCart(payload?.cart ?? payload);
+  const [isPlacing, setIsPlacing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAddressChange = (field: keyof AddressForm, value: string) => {
+    setAddress((prev) => ({ ...prev, [field]: value }));
   };
 
-  const fetchAddresses = async () => {
-    try {
-      const res = await apiClient.get("/addresses");
-      const root = res.data;
-      const payload = root?.data ?? root;
-      const list = payload?.addresses ?? payload;
-      const arr: SavedAddress[] = Array.isArray(list) ? list : [];
-      setSavedAddresses(arr);
-
-      // Default address prefill
-      const def =
-        arr.find((a) => a.isDefault) ||
-        (arr.length > 0 ? arr[0] : undefined);
-      if (def) {
-        setSelectedAddressId(def._id);
-        setAddress({
-          fullName: def.fullName,
-          phone: def.phone,
-          pincode: def.pincode,
-          line1: def.line1,
-          line2: def.line2 || "",
-          city: def.city,
-          state: def.state,
-          landmark: def.landmark || "",
-        });
-      }
-    } catch (err) {
-      console.error("Failed to fetch addresses", err);
-    }
-  };
-
-  useEffect(() => {
-    (async () => {
-      try {
-        setIsLoading(true);
-        await Promise.all([fetchCart(), fetchAddresses()]);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, []);
-
-  // 🔹 Jab dropdown se koi saved address select ho
   const handleSelectAddress = (value: string) => {
     setSelectedAddressId(value);
     if (value === "new") {
@@ -112,56 +99,117 @@ export default function CheckoutPageClient() {
     }
   };
 
-  const handleChange = (field: keyof AddressForm, value: string) => {
-    setAddress((prev) => ({ ...prev, [field]: value }));
+  const fetchCart = async () => {
+    try {
+      setCartLoading(true);
+      const res = await apiClient.get("/cart");
+      const root = res.data;
+      const payload = root?.data ?? root;
+      const c = payload?.cart ?? payload;
+      setCart(c);
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err?.response?.data?.message ||
+          "Failed to load cart. Please try again."
+      );
+    } finally {
+      setCartLoading(false);
+    }
+  };
+
+  const fetchAddresses = async () => {
+    try {
+      const res = await apiClient.get("/addresses");
+      const root = res.data;
+      const payload = root?.data ?? root;
+      const list = payload?.addresses ?? payload;
+      const arr: SavedAddress[] = Array.isArray(list) ? list : [];
+      setSavedAddresses(arr);
+
+      const def =
+        arr.find((a) => a.isDefault) || (arr.length > 0 ? arr[0] : undefined);
+
+      if (def) {
+        setSelectedAddressId(def._id);
+        setAddress({
+          fullName: def.fullName,
+          phone: def.phone,
+          pincode: def.pincode,
+          line1: def.line1,
+          line2: def.line2 || "",
+          city: def.city,
+          state: def.state,
+          landmark: def.landmark || "",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch addresses", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCart();
+    fetchAddresses();
+  }, []);
+
+  const validateAddress = () => {
+    if (!address.fullName.trim()) return "Full name is required";
+    if (!address.phone.trim()) return "Phone is required";
+    if (!address.pincode.trim()) return "Pincode is required";
+    if (!address.line1.trim()) return "Address line is required";
+    if (!address.city.trim()) return "City is required";
+    if (!address.state.trim()) return "State is required";
+    return null;
   };
 
   const handlePlaceOrder = async () => {
-    if (!cart || !cart.totalItems) {
+    setError(null);
+
+    const addrError = validateAddress();
+    if (addrError) {
+      setError(addrError);
+      alert(addrError);
+      return;
+    }
+
+    if (!cart || cart.totalItems === 0) {
+      setError("Your cart is empty.");
       alert("Your cart is empty.");
       return;
     }
 
-    if (!address.fullName || !address.phone || !address.pincode || !address.line1) {
-      alert("Please fill required address fields.");
+    // Razorpay SDK check
+    // @ts-ignore
+    const Razorpay = (window as any).Razorpay;
+    if (!Razorpay) {
+      alert("Razorpay SDK not loaded. Please refresh the page.");
       return;
     }
 
     try {
-      setIsPlacingOrder(true);
+      setIsPlacing(true);
 
-      // 1) Backend me Razorpay order create
-      const createOrderRes = await apiClient.post(
-        "/checkout/create-order",
-        {
-          address, // yahi object backend me jayega
-        }
-      );
-
-      const { order } =
-        createOrderRes.data?.data ?? createOrderRes.data ?? {};
-
-      if (!order?.id) {
-        alert("Failed to create Razorpay order.");
-        return;
-      }
-
-      // 2) Razorpay checkout open
-      const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!;
-      // @ts-ignore
-      const Razorpay = (window as any).Razorpay;
-      if (!Razorpay) {
-        alert("Razorpay SDK not loaded.");
-        return;
-      }
+      // 1) Backend se Razorpay order create
+      const orderRes = await apiClient.post("/checkout/create-order");
+      const orderRoot = orderRes.data;
+      const orderPayload = orderRoot?.data ?? orderRoot;
+      const rzpOrder = orderPayload?.order ?? orderPayload;
 
       const options = {
-        key: rzpKey,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Gift App",
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID as string,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        name: "Gift Walah 365",
         description: "Order payment",
-        order_id: order.id,
+        order_id: rzpOrder.id,
+        prefill: {
+          name: address.fullName,
+          contact: address.phone,
+        },
+        notes: {
+          address: `${address.line1}, ${address.city}, ${address.state} - ${address.pincode}`,
+        },
         handler: async function (response: any) {
           try {
             const verifyRes = await apiClient.post(
@@ -174,23 +222,26 @@ export default function CheckoutPageClient() {
               }
             );
 
-            console.log("Payment verified:", verifyRes.data);
+            const vRoot = verifyRes.data;
+            const vPayload = vRoot?.data ?? vRoot;
+            const createdOrder = vPayload?.order ?? vPayload;
+
             alert("Payment successful! Order placed.");
-            router.push("/orders");
+            if (createdOrder?._id) {
+              router.push(`/orders/${createdOrder._id}`);
+            } else {
+              router.push("/orders");
+            }
           } catch (err: any) {
             console.error(err);
             alert(
               err?.response?.data?.message ||
-                "Payment verification failed. Please contact support."
+                "Payment verified, but failed to create order."
             );
           }
         },
-        prefill: {
-          name: address.fullName,
-          contact: address.phone,
-        },
         theme: {
-          color: "#2874f0",
+          color: "#ff9f00",
         },
       };
 
@@ -198,16 +249,22 @@ export default function CheckoutPageClient() {
       rzp.open();
     } catch (err: any) {
       console.error(err);
+      setError(
+        err?.response?.data?.message ||
+          "Failed to initiate payment. Please try again."
+      );
       alert(
         err?.response?.data?.message ||
-          "Failed to start payment. Please try again."
+          "Failed to initiate payment. Please try again."
       );
     } finally {
-      setIsPlacingOrder(false);
+      setIsPlacing(false);
     }
   };
 
-  if (isLoading) {
+  // ---------------- RENDER ----------------
+
+  if (cartLoading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <p className="rounded-md bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
@@ -217,25 +274,33 @@ export default function CheckoutPageClient() {
     );
   }
 
-  if (!cart || !cart.items || cart.items.length === 0) {
+  if (!cart || cart.totalItems === 0) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <p className="rounded-md bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
-          Your cart is empty.
-        </p>
+        <div className="max-w-sm rounded-md bg-white p-4 text-center shadow-sm">
+          <ShoppingCart className="mx-auto mb-2 h-8 w-8 text-slate-400" />
+          <p className="text-sm font-semibold text-slate-800">
+            Your cart is empty
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Add items to your cart before checkout.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-[2fr,1fr]">
-      {/* Address section */}
+    <section className="grid gap-4 md:grid-cols-[2fr,1.2fr]">
+      {/* Left: Address */}
       <div className="space-y-3 rounded-md bg-white p-3 shadow-sm md:p-4">
-        <h1 className="text-sm font-semibold text-slate-800 md:text-base">
-          Delivery Address
-        </h1>
+        <div className="flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-brand-primary" />
+          <h1 className="text-sm font-semibold text-slate-800 md:text-base">
+            Delivery Address
+          </h1>
+        </div>
 
-        {/* Saved addresses dropdown */}
         {savedAddresses.length > 0 && (
           <div className="space-y-1">
             <label className="text-[11px] text-slate-600 md:text-xs">
@@ -257,7 +322,6 @@ export default function CheckoutPageClient() {
           </div>
         )}
 
-        {/* Address form (always editable) */}
         <div className="grid gap-2 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-[11px] text-slate-600 md:text-xs">
@@ -266,7 +330,7 @@ export default function CheckoutPageClient() {
             <input
               className="w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500 md:text-sm"
               value={address.fullName}
-              onChange={(e) => handleChange("fullName", e.target.value)}
+              onChange={(e) => handleAddressChange("fullName", e.target.value)}
             />
           </div>
           <div>
@@ -276,7 +340,7 @@ export default function CheckoutPageClient() {
             <input
               className="w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500 md:text-sm"
               value={address.phone}
-              onChange={(e) => handleChange("phone", e.target.value)}
+              onChange={(e) => handleAddressChange("phone", e.target.value)}
             />
           </div>
           <div>
@@ -286,7 +350,7 @@ export default function CheckoutPageClient() {
             <input
               className="w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500 md:text-sm"
               value={address.pincode}
-              onChange={(e) => handleChange("pincode", e.target.value)}
+              onChange={(e) => handleAddressChange("pincode", e.target.value)}
             />
           </div>
           <div>
@@ -296,7 +360,7 @@ export default function CheckoutPageClient() {
             <input
               className="w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500 md:text-sm"
               value={address.city}
-              onChange={(e) => handleChange("city", e.target.value)}
+              onChange={(e) => handleAddressChange("city", e.target.value)}
             />
           </div>
           <div>
@@ -306,7 +370,7 @@ export default function CheckoutPageClient() {
             <input
               className="w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500 md:text-sm"
               value={address.state}
-              onChange={(e) => handleChange("state", e.target.value)}
+              onChange={(e) => handleAddressChange("state", e.target.value)}
             />
           </div>
           <div>
@@ -316,7 +380,7 @@ export default function CheckoutPageClient() {
             <input
               className="w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500 md:text-sm"
               value={address.landmark}
-              onChange={(e) => handleChange("landmark", e.target.value)}
+              onChange={(e) => handleAddressChange("landmark", e.target.value)}
             />
           </div>
           <div className="md:col-span-2">
@@ -327,39 +391,74 @@ export default function CheckoutPageClient() {
               className="w-full rounded border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500 md:text-sm"
               rows={2}
               value={address.line1}
-              onChange={(e) => handleChange("line1", e.target.value)}
+              onChange={(e) => handleAddressChange("line1", e.target.value)}
             />
           </div>
         </div>
+
+        {error && (
+          <p className="text-[11px] text-red-500 md:text-xs">{error}</p>
+        )}
       </div>
 
-      {/* Right: Order summary + CTA */}
+      {/* Right: Order summary */}
       <div className="space-y-3 rounded-md bg-white p-3 shadow-sm md:p-4">
-        <h2 className="text-sm font-semibold text-slate-800 md:text-base">
-          Order Summary
-        </h2>
+        <div className="flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-orange-500" />
+          <h2 className="text-sm font-semibold text-slate-800 md:text-base">
+            Order Summary
+          </h2>
+        </div>
+
+        <div className="space-y-2 border-b border-slate-100 pb-2 text-xs text-slate-700 md:text-sm">
+          {cart.items.map((item, idx) => (
+            <div key={idx} className="flex gap-2">
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded bg-slate-50 md:h-14 md:w-14">
+                <img
+                  src={
+                    item.image ||
+                    "https://via.placeholder.com/60x60.png?text=No+Image"
+                  }
+                  alt={item.name}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+              <div className="flex-1">
+                <p className="line-clamp-2 text-[11px] font-medium text-slate-900 md:text-xs">
+                  {item.name}
+                </p>
+                <p className="text-[10px] text-slate-500 md:text-[11px]">
+                  Qty: {item.quantity}
+                </p>
+                <p className="text-xs font-semibold text-slate-900 md:text-sm">
+                  {formatPrice(item.price * item.quantity)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
 
         <div className="space-y-1 text-xs text-slate-700 md:text-sm">
-          <p>
-            Items: <span className="font-semibold">{cart.totalItems}</span>
-          </p>
-          <p>
-            Total:{" "}
-            <span className="font-semibold">
-              ₹{cart.totalPrice?.toLocaleString("en-IN")}
-            </span>
+          <div className="flex justify-between">
+            <span>Items ({cart.totalItems})</span>
+            <span>{formatPrice(cart.totalPrice)}</span>
+          </div>
+          <div className="flex justify-between font-semibold text-slate-900">
+            <span>Total Amount</span>
+            <span>{formatPrice(cart.totalPrice)}</span>
+          </div>
+          <p className="text-[11px] text-green-700 md:text-xs">
+            You will not be charged until you complete the payment.
           </p>
         </div>
 
         <button
           type="button"
-          disabled={isPlacingOrder}
+          disabled={isPlacing}
           onClick={handlePlaceOrder}
-          className="mt-3 w-full rounded bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 disabled:opacity-70"
+          className="flex w-full items-center justify-center gap-2 rounded bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 disabled:opacity-70"
         >
-          {isPlacingOrder
-            ? "Processing..."
-            : `Place Order & Pay ₹${cart.totalPrice?.toLocaleString("en-IN")}`}
+          {isPlacing ? "Processing..." : `Place Order & Pay ${formatPrice(cart.totalPrice)}`}
         </button>
       </div>
     </section>

@@ -10,6 +10,7 @@ import {
   updateAddressForUser,
 } from "../services/address.service";
 
+// GET /api/addresses
 export const getMyAddressesController = async (
   req: AuthRequest,
   res: Response,
@@ -17,13 +18,18 @@ export const getMyAddressesController = async (
 ) => {
   try {
     if (!req.user) throw new ApiError(401, "Unauthorized");
+
     const addresses = await getAddressesForUser(req.user.userId);
-    res.status(200).json(successResponse("Addresses fetched", { addresses }));
+
+    return res
+      .status(200)
+      .json(successResponse("Addresses fetched", { addresses }));
   } catch (error) {
     next(error);
   }
 };
 
+// POST /api/addresses
 export const createMyAddressController = async (
   req: AuthRequest,
   res: Response,
@@ -31,13 +37,18 @@ export const createMyAddressController = async (
 ) => {
   try {
     if (!req.user) throw new ApiError(401, "Unauthorized");
+
     const address = await createAddressForUser(req.user.userId, req.body);
-    res.status(201).json(successResponse("Address created", { address }));
+
+    return res
+      .status(201)
+      .json(successResponse("Address created", { address }));
   } catch (error) {
     next(error);
   }
 };
 
+// PUT /api/addresses/:addressId
 export const updateMyAddressController = async (
   req: AuthRequest,
   res: Response,
@@ -45,17 +56,22 @@ export const updateMyAddressController = async (
 ) => {
   try {
     if (!req.user) throw new ApiError(401, "Unauthorized");
+
     const address = await updateAddressForUser(
       req.user.userId,
       req.params.addressId,
       req.body
     );
-    res.status(200).json(successResponse("Address updated", { address }));
+
+    return res
+      .status(200)
+      .json(successResponse("Address updated", { address }));
   } catch (error) {
     next(error);
   }
 };
 
+// DELETE /api/addresses/:addressId
 export const deleteMyAddressController = async (
   req: AuthRequest,
   res: Response,
@@ -63,13 +79,18 @@ export const deleteMyAddressController = async (
 ) => {
   try {
     if (!req.user) throw new ApiError(401, "Unauthorized");
+
     await deleteAddressForUser(req.user.userId, req.params.addressId);
-    res.status(200).json(successResponse("Address deleted", {}));
+
+    return res
+      .status(200)
+      .json(successResponse("Address deleted", {}));
   } catch (error) {
     next(error);
   }
 };
 
+// PATCH /api/addresses/:addressId/default
 export const setMyDefaultAddressController = async (
   req: AuthRequest,
   res: Response,
@@ -77,11 +98,15 @@ export const setMyDefaultAddressController = async (
 ) => {
   try {
     if (!req.user) throw new ApiError(401, "Unauthorized");
+
     const address = await setDefaultAddressForUser(
       req.user.userId,
       req.params.addressId
     );
-    res.status(200).json(successResponse("Default address updated", { address }));
+
+    return res
+      .status(200)
+      .json(successResponse("Default address updated", { address }));
   } catch (error) {
     next(error);
   }

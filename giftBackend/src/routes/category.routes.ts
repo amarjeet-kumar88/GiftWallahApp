@@ -1,13 +1,13 @@
 import { Router } from "express";
-import {
-  createCategoryController,
-  deleteCategoryController,
-  getCategoriesController,
-  getCategoryController,
-  updateCategoryController
-} from "../controllers/category.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { adminMiddleware } from "../middlewares/admin.middleware";
+
+import {
+  adminCreateCategoryController,
+  adminUpdateCategoryController,
+  adminDeleteCategoryController,
+  adminListCategoriesController,
+} from "../controllers/category.controller";
 
 /**
  * @swagger
@@ -135,14 +135,18 @@ import { adminMiddleware } from "../middlewares/admin.middleware";
 
 
 const router = Router();
+router.use(authMiddleware, adminMiddleware);
 
-// Public
-router.get("/", getCategoriesController);
-router.get("/:id", getCategoryController);
+// ✅ List all categories
+router.get("/", adminListCategoriesController);
 
-// Admin-only
-router.post("/", authMiddleware, adminMiddleware, createCategoryController);
-router.put("/:id", authMiddleware, adminMiddleware, updateCategoryController);
-router.delete("/:id", authMiddleware, adminMiddleware, deleteCategoryController);
+// ✅ Create category
+router.post("/", adminCreateCategoryController);
+
+// ✅ Update category
+router.put("/:id", adminUpdateCategoryController);
+
+// ✅ Delete category
+router.delete("/:id", adminDeleteCategoryController);
 
 export default router;

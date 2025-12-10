@@ -3,6 +3,8 @@ import { authMiddleware } from "../middlewares/auth.middleware";
 import {
   getMyOrdersController,
   getMyOrderByIdController,
+  cancelMyOrderController,
+  updateMyOrderAddressController,
 } from "../controllers/order.controller";
 
 /**
@@ -81,5 +83,10 @@ router.use(authMiddleware);
 
 router.get("/", getMyOrdersController);
 router.get("/:orderId", getMyOrderByIdController);
+// 🔹 Address update
+router.put("/:orderId/address", updateMyOrderAddressController);
+
+// 🔹 Cancel order
+router.post("/:orderId/cancel", cancelMyOrderController);
 
 export default router;

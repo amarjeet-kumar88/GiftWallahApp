@@ -10,7 +10,7 @@ export default function Footer() {
               GiftWalah 365
             </p>
             <p className="mt-1 text-[11px] md:text-xs">
-              Flipkart-style shopping experience for gifts and more.
+              GiftWallah365 shopping experience for gifts and more.
             </p>
           </div>
           <div className="flex flex-wrap gap-6 text-[11px] md:text-xs">

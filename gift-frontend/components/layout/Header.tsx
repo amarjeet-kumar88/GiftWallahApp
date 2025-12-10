@@ -62,13 +62,13 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-brand-primary text-white shadow-md">
+    <header className="sticky top-0 z-40 bg-brand-primary shadow-md">
       <div className="container py-2">
         {/* Top row */}
         <div className="flex items-center justify-between gap-2 md:gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-1">
-            <span className="rounded-sm bg-white px-2 py-1 text-base font-bold text-brand-primary md:text-lg">
+            <span className="rounded-sm bg-orange-400 px-2 py-1 text-base font-bold text-brand-primary md:text-lg">
               Gift
             </span>
             <span className="text-base font-semibold md:text-lg">

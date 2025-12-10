@@ -1,26 +1,32 @@
-import { ICategory } from "../models/category.model";
-import { Category } from "../models/category.model";
+import { ICategory, Category } from "../models/category.model";
 import { ApiError } from "../utils/apiError";
 import { slugify } from "../utils/slugify";
 
-interface CreateCategoryInput {
+export interface CreateCategoryInput {
   name: string;
-  parentId?: string;
+  slug?: string;
+  parent?: string | null;
 }
 
+
+// ----------------------------------------
+// CREATE CATEGORY
+// ----------------------------------------
 export const createCategory = async (
   payload: CreateCategoryInput
 ): Promise<ICategory> => {
-  const slug = slugify(payload.name);
+
+  const slug = payload.slug ? slugify(payload.slug) : slugify(payload.name);
 
   const existing = await Category.findOne({ slug });
   if (existing) {
-    throw new ApiError(400, "Category with this name already exists");
+    throw new ApiError(400, "Category with this slug already exists");
   }
 
   let parent: ICategory | null = null;
-  if (payload.parentId) {
-    parent = await Category.findById(payload.parentId);
+
+  if (payload.parent) {
+    parent = await Category.findById(payload.parent);
     if (!parent) {
       throw new ApiError(400, "Parent category not found");
     }
@@ -29,19 +35,24 @@ export const createCategory = async (
   const category = await Category.create({
     name: payload.name,
     slug,
-    parent: parent ? parent._id : null
+    parent: parent ? parent._id : null,
   });
 
   return category;
 };
 
+
+// ----------------------------------------
+// GET ALL CATEGORIES
+// ----------------------------------------
 export const getAllCategories = async () => {
-  const categories = await Category.find({ isActive: true }).sort({
-    name: 1
-  });
-  return categories;
+  return Category.find().sort({ name: 1 });
 };
 
+
+// ----------------------------------------
+// GET CATEGORY BY ID
+// ----------------------------------------
 export const getCategoryById = async (id: string) => {
   const category = await Category.findById(id);
   if (!category) {
@@ -50,33 +61,45 @@ export const getCategoryById = async (id: string) => {
   return category;
 };
 
+
+// ----------------------------------------
+// UPDATE CATEGORY
+// ----------------------------------------
 export const updateCategory = async (
   id: string,
-  data: Partial<{ name: string; parentId?: string; isActive: boolean }>
+  data: Partial<{
+    name: string;
+    parent: string | null;
+    slug: string;
+    isActive: boolean;
+  }>
 ) => {
+
   const category = await Category.findById(id);
   if (!category) {
     throw new ApiError(404, "Category not found");
   }
 
-  if (data.name) {
+  if (data.name !== undefined) {
     category.name = data.name;
-    category.slug = slugify(data.name);
+    category.slug = data.slug
+      ? slugify(data.slug)
+      : slugify(data.name);
   }
 
   if (typeof data.isActive === "boolean") {
     category.isActive = data.isActive;
   }
 
-  if (data.parentId !== undefined) {
-    if (!data.parentId) {
+  if (data.parent !== undefined) {
+    if (!data.parent) {
       category.parent = null;
     } else {
-      const parent = await Category.findById(data.parentId);
-      if (!parent) {
+      const parentCategory = await Category.findById(data.parent);
+      if (!parentCategory) {
         throw new ApiError(400, "Parent category not found");
       }
-      category.parent = parent._id;
+      category.parent = parentCategory._id;
     }
   }
 
@@ -84,10 +107,16 @@ export const updateCategory = async (
   return category;
 };
 
+
+// ----------------------------------------
+// DELETE CATEGORY
+// ----------------------------------------
 export const deleteCategory = async (id: string) => {
   const category = await Category.findById(id);
   if (!category) {
     throw new ApiError(404, "Category not found");
   }
+
   await category.deleteOne();
 };
+

@@ -10,6 +10,7 @@ export const verifyPaymentController = async (
   next: NextFunction
 ) => {
   try {
+    // if (!req.user) throw new ApiError(401, "Unauthorized");
     const {
       razorpay_order_id,
       razorpay_payment_id,

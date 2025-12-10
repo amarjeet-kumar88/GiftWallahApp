@@ -1,85 +1,102 @@
 import { Request, Response, NextFunction } from "express";
+import { successResponse } from "../utils/apiResponse";
+import { ApiError } from "../utils/apiError";
 import {
   createCategory,
   getAllCategories,
-  getCategoryById,
   updateCategory,
-  deleteCategory
+  deleteCategory,
 } from "../services/category.service";
-import { successResponse } from "../utils/apiResponse";
 
-export const createCategoryController = async (
+
+// -------------------------
+// GET ALL CATEGORIES
+// -------------------------
+export const adminListCategoriesController = async (
   req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { name, parentId } = req.body;
-    const category = await createCategory({ name, parentId });
-    res
-      .status(201)
-      .json(successResponse("Category created successfully", { category }));
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getCategoriesController = async (
-  _req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const categories = await getAllCategories();
-    res
-      .status(200)
-      .json(successResponse("Categories fetched", { categories }));
+    res.status(200).json(successResponse("Categories fetched", { categories }));
   } catch (error) {
     next(error);
   }
 };
 
-export const getCategoryController = async (
+
+// -------------------------
+// CREATE CATEGORY
+// -------------------------
+export const adminCreateCategoryController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const category = await getCategoryById(req.params.id);
-    res.status(200).json(successResponse("Category fetched", { category }));
+    const { name, parent, slug } = req.body;
+
+    if (!name) {
+      throw new ApiError(400, "Category name is required");
+    }
+
+    const category = await createCategory({
+      name,
+      parent: parent || null,   // ✅ FIXED
+      slug,                     // ✅ FIXED
+    });
+
+    res.status(201).json(
+      successResponse("Category created", { category })
+    );
   } catch (error) {
     next(error);
   }
 };
 
-export const updateCategoryController = async (
+
+// -------------------------
+// UPDATE CATEGORY
+// -------------------------
+export const adminUpdateCategoryController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { name, parentId, isActive } = req.body;
+    const { name, parent, isActive, slug } = req.body;
+
     const category = await updateCategory(req.params.id, {
       name,
-      parentId,
-      isActive
+      parent: parent || null,   // ✅ FIXED
+      isActive,
+      slug,                     // ✅ FIXED
     });
+
     res
       .status(200)
-      .json(successResponse("Category updated successfully", { category }));
+      .json(successResponse("Category updated", { category }));
   } catch (error) {
     next(error);
   }
 };
 
-export const deleteCategoryController = async (
+
+// -------------------------
+// DELETE CATEGORY
+// -------------------------
+export const adminDeleteCategoryController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     await deleteCategory(req.params.id);
-    res.status(200).json(successResponse("Category deleted successfully"));
+
+    res
+      .status(200)
+      .json(successResponse("Category deleted", {}));
   } catch (error) {
     next(error);
   }

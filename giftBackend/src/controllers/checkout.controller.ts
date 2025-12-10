@@ -8,7 +8,6 @@ import { razorpay } from "../config/razorpay";
 import { ENV } from "../config/env";
 import { createPaidOrderFromCart } from "../services/order.service";
 
-
 // POST /api/checkout/create-order
 export const createRazorpayOrderController = async (
   req: AuthRequest,
@@ -42,12 +41,12 @@ export const createRazorpayOrderController = async (
     } catch (err: any) {
       console.error("Razorpay error:", err);
 
-      // Razorpay ka common structure hai:
-      // { statusCode: 401, error: { description, code } }
       if (err?.statusCode === 401) {
         throw new ApiError(
           500,
-          `Razorpay authentication failed: ${err?.error?.description || "check your API key & secret"}`
+          `Razorpay authentication failed: ${
+            err?.error?.description || "check your API key & secret"
+          }`
         );
       }
 
@@ -60,7 +59,6 @@ export const createRazorpayOrderController = async (
     next(error);
   }
 };
-
 
 // POST /api/checkout/verify-payment
 export const verifyRazorpayPaymentController = async (
@@ -94,7 +92,7 @@ export const verifyRazorpayPaymentController = async (
       throw new ApiError(400, "Invalid payment signature");
     }
 
-    // verified → cart se order create
+    // verified → cart se order create + address save
     const order = await createPaidOrderFromCart({
       userId,
       address,
