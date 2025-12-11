@@ -1,3 +1,5 @@
+// src/services/cart.service.ts
+import mongoose from "mongoose";
 import { Cart } from "../models/cart.model";
 import { Product } from "../models/product.model";
 import { ApiError } from "../utils/apiError";
@@ -6,9 +8,9 @@ const recalcCart = (cart: any) => {
   let totalItems = 0;
   let totalPrice = 0;
 
-  cart.items.forEach((item: any) => {
-    totalItems += item.quantity;
-    totalPrice += item.quantity * item.price;
+  (cart.items || []).forEach((item: any) => {
+    totalItems += Number(item.quantity || 0);
+    totalPrice += Number(item.quantity || 0) * Number(item.price || 0);
   });
 
   cart.totalItems = totalItems;
@@ -19,10 +21,10 @@ export const getOrCreateCart = async (userId: string) => {
   let cart = await Cart.findOne({ user: userId });
   if (!cart) {
     cart = await Cart.create({
-      user: userId,
+      user: new mongoose.Types.ObjectId(userId),
       items: [],
       totalItems: 0,
-      totalPrice: 0
+      totalPrice: 0,
     });
   }
   return cart;
@@ -30,11 +32,16 @@ export const getOrCreateCart = async (userId: string) => {
 
 export const getCartForUser = async (userId: string) => {
   const cart = await getOrCreateCart(userId);
-
-  // ✅ Agar product info bhi chahiye ho to populate
-  await cart.populate("items.product");
-
+  await cart.populate({
+    path: "items.product",
+    select: "name images price salePrice isActive slug",
+  });
   return cart;
+};
+
+export const getCartCountForUser = async (userId: string) => {
+  const cart = await getOrCreateCart(userId);
+  return cart.totalItems || 0;
 };
 
 export const addOrUpdateCartItem = async (
@@ -42,12 +49,14 @@ export const addOrUpdateCartItem = async (
   productId: string,
   quantity: number
 ) => {
+  quantity = Number(quantity || 1);
+
   if (quantity < 1) {
     return removeCartItem(userId, productId);
   }
 
   const product = await Product.findById(productId);
-  if (!product || !product.isActive) {
+  if (!product || !(product as any).isActive) {
     throw new ApiError(404, "Product not found or inactive");
   }
 
@@ -59,14 +68,13 @@ export const addOrUpdateCartItem = async (
 
   const price = product.salePrice ?? product.price;
   const name = product.name;
-  const image = product.images?.[0]?.url;
+  const image = product.images && product.images.length ? product.images[0].url : undefined;
 
   const existingIdx = cart.items.findIndex(
-    (i) => i.product.toString() === productId
+    (i: any) => i.product.toString() === productId
   );
 
   if (existingIdx > -1) {
-    // ✅ update quantity (addOrUpdate)
     cart.items[existingIdx].quantity = quantity;
     cart.items[existingIdx].price = price;
     cart.items[existingIdx].name = name;
@@ -77,14 +85,17 @@ export const addOrUpdateCartItem = async (
       quantity,
       price,
       name,
-      image
+      image,
     } as any);
   }
 
   recalcCart(cart);
   await cart.save();
 
-  await cart.populate("items.product");
+  await cart.populate({
+    path: "items.product",
+    select: "name images price salePrice isActive slug",
+  });
 
   return cart;
 };
@@ -98,7 +109,11 @@ export const removeCartItem = async (userId: string, productId: string) => {
 
   recalcCart(cart);
   await cart.save();
-  await cart.populate("items.product");
+
+  await cart.populate({
+    path: "items.product",
+    select: "name images price salePrice isActive slug",
+  });
 
   return cart;
 };

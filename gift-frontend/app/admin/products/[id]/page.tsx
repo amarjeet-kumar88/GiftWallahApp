@@ -2,6 +2,7 @@
 import AdminProductForm from "@/components/admin/AdminProductForm";
 import apiClient from "@/lib/apiClient";
 import { Product } from "@/lib/types";
+import EditProductPageClient from "@/components/admin/EditProductPageClient";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -31,9 +32,9 @@ export default async function AdminEditProductPage({ params }: Props) {
       {product ? (
         <AdminProductForm mode="edit" initialProduct={product as any} productId={id} />
       ) : (
-        <p className="text-xs text-red-500 md:text-sm">
-          Product not found.
-        </p>
+        <div className="mx-auto max-w-4xl px-3 py-4 md:px-4 md:py-6">
+        <EditProductPageClient productId={id} />
+      </div>
       )}
     </section>
   );

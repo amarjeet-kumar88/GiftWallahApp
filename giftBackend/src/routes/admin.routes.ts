@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { adminMiddleware } from "../middlewares/admin.middleware";
+import { upload } from "../middlewares/upload.middleware";
 
 import {
   adminListOrdersController,
@@ -18,6 +19,7 @@ import {
   adminCreateCategoryController,
   adminUpdateCategoryController,
   adminDeleteCategoryController,
+  adminUploadProductImageController,
 } from "../controllers/admin.controller";
 
 const router = Router();
@@ -34,7 +36,7 @@ router.get("/orders/:id", adminGetOrderController);
 router.patch("/orders/:id/status", adminUpdateOrderStatusController);
 router.patch("/orders/:id/payment-status", adminUpdatePaymentStatusController);
 
-
+router.post("/products/upload", upload.single("image"), adminUploadProductImageController);
 // ------------------------
 // PRODUCTS
 // ------------------------

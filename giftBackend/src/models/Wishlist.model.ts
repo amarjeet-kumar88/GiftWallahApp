@@ -1,3 +1,4 @@
+// src/models/Wishlist.model.ts
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IWishlistItem {
@@ -14,7 +15,7 @@ export interface IWishlist extends Document {
 const wishlistItemSchema = new Schema<IWishlistItem>(
   {
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
-    addedAt: { type: Date, default: Date.now }
+    addedAt: { type: Date, default: Date.now },
   },
   { _id: false }
 );
@@ -22,7 +23,7 @@ const wishlistItemSchema = new Schema<IWishlistItem>(
 const wishlistSchema = new Schema<IWishlist>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
-    items: { type: [wishlistItemSchema], default: [] }
+    items: { type: [wishlistItemSchema], default: [] },
   },
   { timestamps: true }
 );

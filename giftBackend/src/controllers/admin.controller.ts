@@ -9,6 +9,7 @@ import {
   updateCategory,
   deleteCategory,
 } from "../services/category.service";
+import { cloudinary } from "../config/cloudinary";
 
 const toSlug = (value: string) =>
   value
@@ -242,12 +243,36 @@ export const adminUpdateProductController = async (
 
     if (name !== undefined) product.name = name;
     if (description !== undefined) product.description = description;
-    if (price !== undefined) product.price = price;
-    if (salePrice !== undefined) product.salePrice = salePrice;
-    if (stock !== undefined) product.stock = stock;
+
+    if (price !== undefined) {
+      const p = Number(price);
+      if (!Number.isNaN(p)) product.price = p;
+    }
+
+    if (salePrice !== undefined) {
+      if (salePrice === "" || salePrice === null) {
+        (product as any).salePrice = undefined;
+      } else {
+        const sp = Number(salePrice);
+        if (!Number.isNaN(sp)) (product as any).salePrice = sp;
+      }
+    }
+
+    if (stock !== undefined) {
+      const s = Number(stock);
+      if (!Number.isNaN(s)) product.stock = s;
+    }
+
     if (brand !== undefined) product.brand = brand;
-    if (categoryId !== undefined) product.category = categoryId;
-    if (isActive !== undefined) product.isActive = isActive;
+    if (categoryId !== undefined) (product as any).category = categoryId;
+
+    if (isActive !== undefined) {
+      (product as any).isActive =
+        typeof isActive === "string"
+          ? isActive === "true" || isActive === "1"
+          : !!isActive;
+    }
+
     if (slug !== undefined) {
       (product as any).slug =
         slug.trim().length > 0 ? toSlug(slug) : toSlug(product.name);
@@ -258,7 +283,7 @@ export const adminUpdateProductController = async (
         Array.isArray(imageUrls)
           ? imageUrls.map((url: string) => ({ url }))
           : typeof imageUrls === "string" && imageUrls.trim().length
-          ? imageUrls.split(",").map((u) => ({ url: u.trim() }))
+          ? imageUrls.split(",").map((u: string) => ({ url: u.trim() }))
           : [];
       (product as any).images = images;
     }
@@ -270,6 +295,35 @@ export const adminUpdateProductController = async (
     next(err);
   }
 };
+
+
+// admin.controller.ts (ya jo upload controller hai)
+export const adminUploadProductImageController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) {
+      throw new ApiError(400, "No file uploaded");
+    }
+
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "products",
+    });
+
+    return res
+      .status(200)
+      .json(successResponse("Image uploaded", { imageUrl: result.secure_url }));
+  } catch (err: any) {
+    console.error("Cloudinary upload failed:", {
+      message: err.message,
+      code: err.code,
+      name: err.name,
+      stack: err.stack,
+    });
+
+    next(new ApiError(500, "Image upload failed. Please try again."));
+  }
+};
+
+
 
 
 // PATCH /api/admin/products/:id/active

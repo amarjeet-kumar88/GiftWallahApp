@@ -1,11 +1,12 @@
 import { Router } from "express";
+import { authMiddleware } from "../middlewares/auth.middleware";
 import {
   getCartController,
   addOrUpdateCartItemController,
   removeCartItemController,
-  clearCartController
+  clearCartController,
+  getCartCountController,
 } from "../controllers/cart.controller";
-import { authMiddleware } from "../middlewares/auth.middleware";
 
 
 /**
@@ -95,13 +96,12 @@ import { authMiddleware } from "../middlewares/auth.middleware";
 
 
 const router = Router();
-
 router.use(authMiddleware);
 
 router.get("/", getCartController);
+router.get("/count", getCartCountController);
 router.post("/items", addOrUpdateCartItemController);
-// productId = Product ka _id
 router.delete("/items/:productId", removeCartItemController);
-router.delete("/", clearCartController);
+router.post("/clear", clearCartController);
 
 export default router;

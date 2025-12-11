@@ -6,4 +6,9 @@ services:
     ports:
       - "5000:5000"
     env_file:
-      - .env    # yahan se saari env values aayengi
+      - .env 
+      - HTTP_PROXY=http://your-proxy:port
+      - HTTPS_PROXY=http://your-proxy:port   # yahan se saari env values aayengi
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1

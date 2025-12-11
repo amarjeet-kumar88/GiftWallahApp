@@ -1,3 +1,4 @@
+// src/models/cart.model.ts
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface ICartItem {
@@ -22,7 +23,7 @@ const cartItemSchema = new Schema<ICartItem>(
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true },
     name: { type: String, required: true },
-    image: { type: String }
+    image: { type: String },
   },
   { _id: false }
 );
@@ -32,7 +33,7 @@ const cartSchema = new Schema<ICart>(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
     items: { type: [cartItemSchema], default: [] },
     totalItems: { type: Number, default: 0 },
-    totalPrice: { type: Number, default: 0 }
+    totalPrice: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

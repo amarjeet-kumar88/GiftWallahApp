@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import apiClient from "@/lib/apiClient";
 import { Product } from "@/lib/types";
+import Link from "next/link";
 import {
   Boxes,
   Loader2,
   Search,
   ToggleLeft,
   ToggleRight,
+  Plus,
+  Pencil,
 } from "lucide-react";
 
 const formatPrice = (value: number) =>
@@ -203,6 +206,13 @@ export default function AdminProductsPage() {
             <option value="INACTIVE">Inactive only</option>
           </select>
         </div>
+        <Link
+          href="/admin/products/new"
+          className="inline-flex items-center border border-slate-300 gap-1 rounded bg-brand-primary px-3 py-1.5 text-[11px] font-semibold text-black hover:bg-blue-700 md:text-xs"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          New Product
+        </Link>
       </div>
 
       {filteredProducts.length === 0 ? (
@@ -341,6 +351,17 @@ export default function AdminProductsPage() {
                         <p className="text-slate-500">
                           Brand: {p.brand || "—"}
                         </p>
+                      </div>
+                    </td>
+                     <td className="px-2 py-2 align-top text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <Link
+                          href={`/admin/products/${p._id}`}
+                          className="inline-flex items-center gap-1 rounded border border-slate-200 px-2 py-1 text-[10px] hover:bg-slate-50"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Edit
+                        </Link>
                       </div>
                     </td>
                   </tr>

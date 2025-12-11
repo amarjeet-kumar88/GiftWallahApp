@@ -4,7 +4,8 @@ import {
   deleteProductController,
   getProductController,
   listProductsController,
-  updateProductController
+  updateProductController,
+  suggestProductsController
 } from "../controllers/product.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { adminMiddleware } from "../middlewares/admin.middleware";
@@ -229,6 +230,7 @@ router.get(
   validateRequest(listProductsQuerySchema),
   listProductsController
 );
+router.get("/suggest", suggestProductsController);
 
 router.get(
   "/:id",

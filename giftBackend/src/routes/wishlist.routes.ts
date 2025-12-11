@@ -5,7 +5,8 @@ import {
   clearWishlistController,
   getWishlistController,
   isInWishlistController,
-  removeFromWishlistController
+  removeFromWishlistController,
+  getWishlistCountController,
 } from "../controllers/wishlist.controller";
 import { validateRequest } from "../middlewares/validateRequest.middleware";
 import {
@@ -116,6 +117,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get("/", getWishlistController);
+router.get("/count", getWishlistCountController);
 
 router.post(
   "/",

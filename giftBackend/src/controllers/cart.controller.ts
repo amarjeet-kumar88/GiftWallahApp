@@ -1,10 +1,12 @@
+// src/controllers/cart.controller.ts
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import {
   addOrUpdateCartItem,
   clearCart,
   getCartForUser,
-  removeCartItem
+  removeCartItem,
+  getCartCountForUser,
 } from "../services/cart.service";
 import { successResponse } from "../utils/apiResponse";
 import { ApiError } from "../utils/apiError";
@@ -18,9 +20,21 @@ export const getCartController = async (
     if (!req.user) throw new ApiError(401, "Unauthorized");
 
     const cart = await getCartForUser(req.user.userId);
-    return res
-      .status(200)
-      .json(successResponse("Cart fetched", { cart }));
+    return res.status(200).json(successResponse("Cart fetched", { cart }));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCartCountController = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) throw new ApiError(401, "Unauthorized");
+    const count = await getCartCountForUser(req.user.userId);
+    return res.status(200).json(successResponse("Cart count", { count }));
   } catch (error) {
     next(error);
   }
@@ -43,9 +57,7 @@ export const addOrUpdateCartItemController = async (
       Number(quantity || 1)
     );
 
-    return res
-      .status(200)
-      .json(successResponse("Cart updated", { cart }));
+    return res.status(200).json(successResponse("Cart updated", { cart }));
   } catch (error) {
     next(error);
   }
@@ -64,9 +76,7 @@ export const removeCartItemController = async (
 
     const cart = await removeCartItem(req.user.userId, productId);
 
-    return res
-      .status(200)
-      .json(successResponse("Item removed from cart", { cart }));
+    return res.status(200).json(successResponse("Item removed from cart", { cart }));
   } catch (error) {
     next(error);
   }
@@ -81,9 +91,7 @@ export const clearCartController = async (
     if (!req.user) throw new ApiError(401, "Unauthorized");
 
     const cart = await clearCart(req.user.userId);
-    return res
-      .status(200)
-      .json(successResponse("Cart cleared", { cart }));
+    return res.status(200).json(successResponse("Cart cleared", { cart }));
   } catch (error) {
     next(error);
   }
